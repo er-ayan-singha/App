@@ -11,7 +11,6 @@ jobs:
 
     env:
       ANDROID_HOME: ${{ github.workspace }}/android-sdk
-      PATH: ${{ github.workspace }}/android-sdk/cmdline-tools/latest/bin:${{ github.workspace }}/android-sdk/platform-tools:${{ github.workspace }}/android-sdk/build-tools/33.0.0:${{ env.PATH }}
 
     steps:
     - name: Checkout repository
@@ -30,6 +29,9 @@ jobs:
         unzip cmdline-tools.zip
         rm cmdline-tools.zip
         mv cmdline-tools latest
+
+    - name: Add Android SDK tools to PATH
+      run: echo "${{ github.workspace }}/android-sdk/cmdline-tools/latest/bin:${{ github.workspace }}/android-sdk/platform-tools:${{ github.workspace }}/android-sdk/build-tools/33.0.0:$PATH" >> $GITHUB_PATH
 
     - name: Accept licenses and install SDK packages
       run: |
