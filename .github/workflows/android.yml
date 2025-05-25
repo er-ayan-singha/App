@@ -1,45 +1,52 @@
+name: Build Kivy APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    env:
+      ANDROID_HOME: ${{ github.workspace }}/android-sdk
+      PATH: ${{ github.workspace }}/android-sdk/cmdline-tools/latest/bin:${{ github.workspace }}/android-sdk/platform-tools:${{ github.workspace }}/android-sdk/build-tools/33.0.0:${{ env.PATH }}
+
     steps:
-      - uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y build-essential git python3-pip zip unzip openjdk-17-jdk wget
+    - name: Install system dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y openjdk-17-jdk wget unzip python3-pip git build-essential zip
 
-      - name: Install Android SDK Command Line Tools
-        run: |
-          mkdir -p $HOME/Android/cmdline-tools
-          cd $HOME/Android/cmdline-tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-          unzip cmdline-tools.zip
-          rm cmdline-tools.zip
+    - name: Download and setup Android SDK Command Line Tools
+      run: |
+        mkdir -p $ANDROID_HOME/cmdline-tools
+        cd $ANDROID_HOME/cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+        unzip cmdline-tools.zip
+        rm cmdline-tools.zip
+        mv cmdline-tools latest
 
-      - name: Set ANDROID_HOME and update PATH
-        run: |
-          echo "ANDROID_HOME=$HOME/Android" >> $GITHUB_ENV
-          echo "$HOME/Android/cmdline-tools/tools/bin" >> $GITHUB_PATH
-          echo "$HOME/Android/platform-tools" >> $GITHUB_PATH
-          echo "$HOME/Android/build-tools" >> $GITHUB_PATH
+    - name: Accept licenses and install SDK packages
+      run: |
+        yes | sdkmanager --sdk_root=$ANDROID_HOME --licenses
+        sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-33" "build-tools;33.0.0"
 
-      - name: Accept Android SDK licenses and install build tools
-        run: |
-          sdkmanager --sdk_root=$HOME/Android "platform-tools" "platforms;android-33" "build-tools;33.0.0"
-          yes | sdkmanager --licenses
+    - name: Upgrade pip and install python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install buildozer cython
 
-      - name: Install python packages
-        run: |
-          pip install --upgrade pip
-          pip install buildozer cython
+    - name: Initialize Buildozer and build APK
+      run: |
+        buildozer android debug
 
-      - name: Build APK
-        run: |
-          buildozer android debug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: hello-world-apk
-          path: bin/*.apk
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: kivy-hello-world-apk
+        path: bin/*.apk
