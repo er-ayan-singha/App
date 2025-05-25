@@ -12,22 +12,25 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install system dependencies
+    - name: Install system deps
       run: |
         sudo apt update
         sudo apt install -y openjdk-17-jdk python3-pip git build-essential zip unzip
 
-    - name: Upgrade pip and install buildozer and cython
+    - name: Install Buildozer and Cython
       run: |
         python3 -m pip install --upgrade pip
-        pip install buildozer cython
+        pip install --upgrade buildozer cython
 
-    - name: Build APK with Buildozer
+    - name: Clean previous Buildozer cache
+      run: rm -rf .buildozer
+
+    - name: Build APK with Buildozer (accept licenses)
       run: |
-        buildozer android debug
+        yes | buildozer android debug
 
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: kivy-hello-world-apk
+        name: kivy-apk
         path: bin/*.apk
