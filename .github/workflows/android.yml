@@ -10,24 +10,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - name: Install system deps
+    - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y openjdk-17-jdk python3-pip git build-essential zip unzip
 
-    - name: Install Buildozer and Cython
+    - name: Upgrade pip and install Buildozer and Cython
       run: |
         python3 -m pip install --upgrade pip
         pip install --upgrade buildozer cython
 
-    - name: Clean previous Buildozer cache
+    - name: Clean Buildozer cache for fresh SDK install
       run: rm -rf .buildozer
 
-    - name: Build APK with Buildozer (accept licenses)
+    - name: Accept Android SDK licenses (if sdkmanager is available)
+      shell: bash
       run: |
-        yes | buildozer android debug
+        SDKMANAGER="$HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager"
+        if [ -f "$SDKMANAGER" ]; then
+          yes | $SDKMANAGER --licenses || true
+        else
+          echo "sdkmanager not found, skipping license acceptance"
+        fi
+
+    - name: Build APK with Buildozer (verbose output and accept licenses)
+      run: |
+        yes | buildozer -v android debug
 
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
